@@ -126,10 +126,12 @@ class CredentialsFetcherImpl final
     {
         server_->Shutdown();
         // Always shutdown the completion queue after the server.
-         cq_->Shutdown();
+        cq_->Shutdown();
         void* ignored_tag;
         bool ignored_ok;
-        while (cq_->Next(&ignored_tag, &ignored_ok)) { }
+        while ( cq_->Next( &ignored_tag, &ignored_ok ) )
+        {
+        }
     }
 
     /**
@@ -479,7 +481,8 @@ class CredentialsFetcherImpl final
                                     break;
                                 }
                                 // retrieve domainless user credentials
-                                std::tuple<std::string, std::string, std::string, std::string, std::string>
+                                std::tuple<std::string, std::string, std::string, std::string,
+                                           std::string>
                                     userCreds = retrieve_credspec_from_secrets_manager(
                                         krb_ticket_arns->credential_domainless_user_arn, region,
                                         creds );
@@ -491,7 +494,8 @@ class CredentialsFetcherImpl final
                                 std::string secret_version_id = std::get<4>( userCreds );
 
                                 if ( isValidDomain( domain ) &&
-                                     !Util::contains_invalid_characters_in_ad_account_name( username ) )
+                                     !Util::contains_invalid_characters_in_ad_account_name(
+                                         username ) )
                                 {
                                     if ( !username.empty() && !password.empty() &&
                                          !domain.empty() &&
@@ -513,11 +517,12 @@ class CredentialsFetcherImpl final
                                         krb_ticket_arns->krb_file_path = krb_files_path;
                                         krb_ticket_info->distinguished_name = distinguished_name;
                                         krb_ticket_info->secret_version_id = secret_version_id;
-                                        
+
                                         std::cerr << Util::getCurrentTime() << '\t'
-                                                  << "INFO: Stored secret version ID: " 
+                                                  << "INFO: Stored secret version ID: "
                                                   << secret_version_id << " for service account: "
-                                                  << krb_ticket_info->service_account_name << std::endl;
+                                                  << krb_ticket_info->service_account_name
+                                                  << std::endl;
 
                                         // handle duplicate service accounts
                                         if ( !krb_ticket_dirs.count( krb_files_path ) )
@@ -900,7 +905,8 @@ class CredentialsFetcherImpl final
                                     }
 
                                     // retrieve domainless user credentials
-                                    std::tuple<std::string, std::string, std::string, std::string, std::string>
+                                    std::tuple<std::string, std::string, std::string, std::string,
+                                               std::string>
                                         userCreds = retrieve_credspec_from_secrets_manager(
                                             krb_ticket_arns->credential_domainless_user_arn, region,
                                             creds );
@@ -926,7 +932,7 @@ class CredentialsFetcherImpl final
                                             // Update the secret version ID for tracking
                                             krb_ticket->secret_version_id = secret_version_id;
                                             std::cerr << Util::getCurrentTime() << '\t'
-                                                      << "INFO: Updated secret version ID to: " 
+                                                      << "INFO: Updated secret version ID to: "
                                                       << secret_version_id << std::endl;
                                         }
                                         else
@@ -2101,7 +2107,7 @@ class CredentialsFetcherImpl final
             GPR_ASSERT( cq_->Next( &got_tag, &ok ) );
             if ( !ok )
             {
-               return;
+                return;
             }
             static_cast<CallDataCreateKerberosLease*>( got_tag )->Proceed( krb_files_dir, cf_logger,
                                                                            aws_sm_secret_name );
@@ -2137,17 +2143,18 @@ class CredentialsFetcherImpl final
 int RunGrpcServer( std::string unix_socket_dir, std::string krb_files_dir, CF_logger& cf_logger,
                    volatile sig_atomic_t* shutdown_signal, std::string aws_sm_secret_name )
 {
-    CredentialsFetcherImpl *creds_fetcher_grpc = nullptr;
+    CredentialsFetcherImpl* creds_fetcher_grpc = nullptr;
 
     pthread_shutdown_signal = shutdown_signal;
 
     while ( *shutdown_signal == 0 )
     {
-       creds_fetcher_grpc = new CredentialsFetcherImpl();   
-       creds_fetcher_grpc->RunServer( unix_socket_dir, krb_files_dir, cf_logger, aws_sm_secret_name );
-       delete creds_fetcher_grpc;
+        creds_fetcher_grpc = new CredentialsFetcherImpl();
+        creds_fetcher_grpc->RunServer( unix_socket_dir, krb_files_dir, cf_logger,
+                                       aws_sm_secret_name );
+        delete creds_fetcher_grpc;
     }
-        
+
     // TBD:: Add return status for errors
     return 0;
 }
@@ -2690,13 +2697,14 @@ std::string retrieve_credspec_from_s3( std::string s3_arn, std::string region,
                 std::cerr << objectName;
                 return dummy_credspec;
             }
-            Aws::S3::S3Client s3Client (credentials,Aws::MakeShared<Aws::S3::S3EndpointProvider>
-                (Aws::S3::S3Client::ALLOCATION_TAG), clientConfig);
+            Aws::S3::S3Client s3Client(
+                credentials,
+                Aws::MakeShared<Aws::S3::S3EndpointProvider>( Aws::S3::S3Client::ALLOCATION_TAG ),
+                clientConfig );
             Aws::S3::Model::GetObjectRequest request;
-            request.SetBucket(s3Bucket);
-            request.SetKey(objectName);
-            Aws::S3::Model::GetObjectOutcome outcome =
-                    s3Client.GetObject(request);
+            request.SetBucket( s3Bucket );
+            request.SetKey( objectName );
+            Aws::S3::Model::GetObjectOutcome outcome = s3Client.GetObject( request );
             if ( !outcome.IsSuccess() )
             {
                 const Aws::S3::S3Error& err = outcome.GetError();

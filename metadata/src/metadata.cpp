@@ -1,8 +1,8 @@
 #include "daemon.h"
+#include "util.hpp"
 #include <filesystem>
 #include <fstream>
 #include <vector>
-#include "util.hpp"
 
 static const std::vector<char> invalid_path_characters = {
     '&', ':', '\\', '|', '*', '?', '<', '>', '`', '$', '{', '}', '(', ')', '"', ';' };
@@ -32,14 +32,15 @@ bool contains_invalid_characters( const std::string& path )
  * @param krb_files_dir - path of the dir for kerberos tickets
  * @return vector of kerberos ticket info
  */
-std::list<krb_ticket_info_t *> read_meta_data_json( std::string file_path )
+std::list<krb_ticket_info_t*> read_meta_data_json( std::string file_path )
 {
-    std::list<krb_ticket_info_t *> krb_ticket_info_list;
+    std::list<krb_ticket_info_t*> krb_ticket_info_list;
     try
     {
         if ( file_path.empty() )
         {
-            std::cout << Util::getCurrentTime() << '\t' << "ERROR: meta data file is empty"  << std::endl;
+            std::cout << Util::getCurrentTime() << '\t' << "ERROR: meta data file is empty"
+                      << std::endl;
             return krb_ticket_info_list;
         }
 
@@ -57,14 +58,13 @@ std::list<krb_ticket_info_t *> read_meta_data_json( std::string file_path )
 
             for ( const Json::Value& krb_info : child_tree_krb_info )
             {
-                krb_ticket_info_t * krb_ticket_info =
-                    new krb_ticket_info_t ;
+                krb_ticket_info_t* krb_ticket_info = new krb_ticket_info_t;
                 std::string krb_file_path = krb_info["krb_file_path"].asString();
 
                 if ( contains_invalid_characters( krb_file_path ) )
                 {
-                    std::cout << Util::getCurrentTime() << '\t' << "ERROR: krb file path contains invalid characters"  <<
-                        std::endl;
+                    std::cout << Util::getCurrentTime() << '\t'
+                              << "ERROR: krb file path contains invalid characters" << std::endl;
                     delete ( krb_ticket_info );
                     break;
                 }
@@ -73,10 +73,13 @@ std::list<krb_ticket_info_t *> read_meta_data_json( std::string file_path )
                 if ( std::filesystem::exists( krb_file_path ) )
                 {
                     krb_ticket_info->krb_file_path = krb_file_path;
-                    
+
                     std::string service_account = krb_info["service_account_name"].asString();
-                    if (Util::contains_invalid_characters_in_ad_account_name(service_account)) {
-                        std::cout << Util::getCurrentTime() << '\t' << "ERROR: service account name contains invalid characters" << std::endl;
+                    if ( Util::contains_invalid_characters_in_ad_account_name( service_account ) )
+                    {
+                        std::cout << Util::getCurrentTime() << '\t'
+                                  << "ERROR: service account name contains invalid characters"
+                                  << std::endl;
                         delete krb_ticket_info;
                         break;
                     }
@@ -84,19 +87,21 @@ std::list<krb_ticket_info_t *> read_meta_data_json( std::string file_path )
 
                     krb_ticket_info->domain_name = krb_info["domain_name"].asString();
                     krb_ticket_info->domainless_user = krb_info["domainless_user"].asString();
-                    if(krb_info.isMember("distinguished_name"))
+                    if ( krb_info.isMember( "distinguished_name" ) )
                     {
-                        krb_ticket_info->distinguished_name = krb_info["distinguished_name"].asString();
+                        krb_ticket_info->distinguished_name =
+                            krb_info["distinguished_name"].asString();
                     }
 
-                    if(krb_info.isMember("credspec_info"))
+                    if ( krb_info.isMember( "credspec_info" ) )
                     {
                         krb_ticket_info->credspec_info = krb_info["credspec_info"].asString();
                     }
 
-                    if(krb_info.isMember("secret_version_id"))
+                    if ( krb_info.isMember( "secret_version_id" ) )
                     {
-                        krb_ticket_info->secret_version_id = krb_info["secret_version_id"].asString();
+                        krb_ticket_info->secret_version_id =
+                            krb_info["secret_version_id"].asString();
                     }
 
                     krb_ticket_info_list.push_back( krb_ticket_info );
@@ -107,8 +112,8 @@ std::list<krb_ticket_info_t *> read_meta_data_json( std::string file_path )
     catch ( const std::exception& ex )
     {
         std::cout << Util::getCurrentTime() << '\t' << "ERROR: '" << ex.what() << "'!" << std::endl;
-        std::cout << Util::getCurrentTime() << '\t' << "ERROR: meta data file is not properly formatted"  <<
-            std::endl;
+        std::cout << Util::getCurrentTime() << '\t'
+                  << "ERROR: meta data file is not properly formatted" << std::endl;
         return krb_ticket_info_list;
     }
 
@@ -137,14 +142,14 @@ std::list<krb_ticket_info_t *> read_meta_data_json( std::string file_path )
  * @return 0 or 1 for successful or failed writes
  */
 
-int write_meta_data_json( krb_ticket_info_t* krb_ticket_info,
-                          std::string lease_id, std::string krb_files_dir )
+int write_meta_data_json( krb_ticket_info_t* krb_ticket_info, std::string lease_id,
+                          std::string krb_files_dir )
 {
-    std::list<krb_ticket_info_t *> krb_ticket_info_list;
+    std::list<krb_ticket_info_t*> krb_ticket_info_list;
 
-    krb_ticket_info_list.push_back(krb_ticket_info);
-    
-    return write_meta_data_json(krb_ticket_info_list, lease_id, krb_files_dir);
+    krb_ticket_info_list.push_back( krb_ticket_info );
+
+    return write_meta_data_json( krb_ticket_info_list, lease_id, krb_files_dir );
 }
 
 /* @param krb_ticket_info_list - info of the kerberos tickets created
@@ -152,8 +157,8 @@ int write_meta_data_json( krb_ticket_info_t* krb_ticket_info,
  * @param krb_files_dir - path of the dir for kerberos tickets
  * @return 0 or 1 for successful or failed writes
  */
-int write_meta_data_json( std::list<krb_ticket_info_t*> krb_ticket_info_list,
-                          std::string lease_id, std::string krb_files_dir )
+int write_meta_data_json( std::list<krb_ticket_info_t*> krb_ticket_info_list, std::string lease_id,
+                          std::string krb_files_dir )
 {
     try
     {
@@ -194,14 +199,15 @@ int write_meta_data_json( std::list<krb_ticket_info_t*> krb_ticket_info_list,
         }
         else
         {
-            std::cout << Util::getCurrentTime() << '\t' << "ERROR: Failed to write JSON file: " << file_path << std::endl;
+            std::cout << Util::getCurrentTime() << '\t'
+                      << "ERROR: Failed to write JSON file: " << file_path << std::endl;
         }
     }
     catch ( const std::exception& ex )
     {
         std::cout << Util::getCurrentTime() << '\t' << "ERROR: '" << ex.what() << "'!" << std::endl;
-        std::cout << Util::getCurrentTime() << '\t' << "ERROR: failed to write meta data file"  <<
-            std::endl;
+        std::cout << Util::getCurrentTime() << '\t' << "ERROR: failed to write meta data file"
+                  << std::endl;
         return -1;
     }
     return 0;

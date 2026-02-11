@@ -71,8 +71,6 @@ class CredentialsFetcherClient
         }
     }
 
-
-
     /**
      * Test method to create kerberos tickets
      * @param credspec_contents - information of service account
@@ -122,17 +120,17 @@ class CredentialsFetcherClient
         }
     }
 
-
     /**
-    * Test method to create kerberos tickets from s3 arns
-    * @param credspec_contents - information of service account
-    * @param username - username for the AD user
-    * @param password - password for the AD user
-    * @param domain - domain associated to gMSA account
-    * @return
-    */
+     * Test method to create kerberos tickets from s3 arns
+     * @param credspec_contents - information of service account
+     * @param username - username for the AD user
+     * @param password - password for the AD user
+     * @param domain - domain associated to gMSA account
+     * @return
+     */
     std::pair<std::string, std::list<std::string>> AddNonDomainJoinedKerberosLeaseMethod(
-            std::list<std::string> credspec_contents, std::string username, std::string password, std::string domain )
+        std::list<std::string> credspec_contents, std::string username, std::string password,
+        std::string domain )
     {
         // Prepare request
         std::list<std::string> krb_ticket_paths;
@@ -144,9 +142,9 @@ class CredentialsFetcherClient
             request.add_credspec_contents( i->c_str() );
         }
 
-        request.set_username(username);
-        request.set_password(password);
-        request.set_domain(domain);
+        request.set_username( username );
+        request.set_password( password );
+        request.set_domain( domain );
 
         credentialsfetcher::CreateNonDomainJoinedKerberosLeaseResponse response;
         grpc::ClientContext context;
@@ -161,7 +159,7 @@ class CredentialsFetcherClient
             for ( int i = 0; i < response.created_kerberos_file_paths_size(); i++ )
             {
                 std::string msg =
-                        "created ticket file " + response.created_kerberos_file_paths( i );
+                    "created ticket file " + response.created_kerberos_file_paths( i );
                 krb_ticket_paths.push_back( msg );
                 std::cout << msg << std::endl;
             }
@@ -173,7 +171,7 @@ class CredentialsFetcherClient
         {
             std::cerr << status.error_code() << ": " << status.error_message() << std::endl;
             result =
-                    std::pair<std::string, std::list<std::string>>( "RPC failed", krb_ticket_paths );
+                std::pair<std::string, std::list<std::string>>( "RPC failed", krb_ticket_paths );
             return result;
         }
     }
@@ -189,7 +187,8 @@ class CredentialsFetcherClient
      */
 
     std::pair<std::string, std::list<std::string>> CreateKerberosTicketsArn(
-        std::list<std::string> credspec_contents, std::string accessId, std::string secretKey, std::string sessionToken, std::string region )
+        std::list<std::string> credspec_contents, std::string accessId, std::string secretKey,
+        std::string sessionToken, std::string region )
     {
         // Prepare request
         std::list<std::string> krb_ticket_paths;
@@ -200,10 +199,10 @@ class CredentialsFetcherClient
         {
             request.add_credspec_arns( i->c_str() );
         }
-        request.set_access_key_id(accessId);
-        request.set_secret_access_key(secretKey);
-        request.set_session_token(sessionToken);
-        request.set_region(region);
+        request.set_access_key_id( accessId );
+        request.set_secret_access_key( secretKey );
+        request.set_session_token( sessionToken );
+        request.set_region( region );
 
         credentialsfetcher::CreateKerberosArnLeaseResponse response;
         grpc::ClientContext context;
@@ -217,8 +216,9 @@ class CredentialsFetcherClient
         {
             for ( int i = 0; i < response.krb_ticket_response_map_size(); i++ )
             {
-               std::string msg =
-                    "created ticket for gMSA " + response.krb_ticket_response_map( i ).created_kerberos_file_paths();
+                std::string msg =
+                    "created ticket for gMSA " +
+                    response.krb_ticket_response_map( i ).created_kerberos_file_paths();
                 krb_ticket_paths.push_back( "test" );
                 std::cout << msg << std::endl;
             }
@@ -237,26 +237,27 @@ class CredentialsFetcherClient
     }
 
     /**
-   * Test method to create kerberos tickets from s3 arns
-   * @param credspec_contents - information of service account
-   * @param accessId - access key id
-   * @param secretKey secret key
-   * @param sessionToken - session token
-   * @param region - aws region
-   * @return
-   */
+     * Test method to create kerberos tickets from s3 arns
+     * @param credspec_contents - information of service account
+     * @param accessId - access key id
+     * @param secretKey secret key
+     * @param sessionToken - session token
+     * @param region - aws region
+     * @return
+     */
 
     std::pair<std::string, std::string> RenewKerberosTicketsArn(
-            std::list<std::string> credspec_contents, std::string accessId, std::string secretKey, std::string sessionToken, std::string region )
+        std::list<std::string> credspec_contents, std::string accessId, std::string secretKey,
+        std::string sessionToken, std::string region )
     {
         // Prepare request
         credentialsfetcher::RenewKerberosArnLeaseRequest request;
         std::pair<std::string, std::string> result;
 
-        request.set_access_key_id(accessId);
-        request.set_secret_access_key(secretKey);
-        request.set_session_token(sessionToken);
-        request.set_region(region);
+        request.set_access_key_id( accessId );
+        request.set_secret_access_key( secretKey );
+        request.set_session_token( sessionToken );
+        request.set_region( region );
 
         credentialsfetcher::RenewKerberosArnLeaseResponse response;
         grpc::ClientContext context;
@@ -268,17 +269,14 @@ class CredentialsFetcherClient
         // Handle response
         if ( status.ok() )
         {
-            std::string msg =
-                        "Renewal of ticket for gMSA " + response.status();
-                std::cout << msg << std::endl;
-            result =
-                    std::pair<std::string, std::string>( "RPC OK", response.status() );
+            std::string msg = "Renewal of ticket for gMSA " + response.status();
+            std::cout << msg << std::endl;
+            result = std::pair<std::string, std::string>( "RPC OK", response.status() );
         }
         else
         {
             std::cerr << status.error_code() << ": " << status.error_message() << std::endl;
-            result =
-                    std::pair<std::string, std::string>( "RPC failed", response.status() );
+            result = std::pair<std::string, std::string>( "RPC failed", response.status() );
             return result;
         }
 
@@ -293,15 +291,16 @@ class CredentialsFetcherClient
      * @return
      */
 
-    std::list<std::string> RenewNonDomainJoinedKerberosLeaseMethod(std::string username, std::string password, std::string
-                                                                                          domain )
+    std::list<std::string> RenewNonDomainJoinedKerberosLeaseMethod( std::string username,
+                                                                    std::string password,
+                                                                    std::string domain )
     {
         // Prepare request
         std::list<std::string> krb_ticket_paths;
         credentialsfetcher::RenewNonDomainJoinedKerberosLeaseRequest request;
-        request.set_username(username);
-        request.set_password(password);
-        request.set_domain(domain);
+        request.set_username( username );
+        request.set_password( password );
+        request.set_domain( domain );
 
         credentialsfetcher::RenewNonDomainJoinedKerberosLeaseResponse response;
         grpc::ClientContext context;
@@ -313,8 +312,7 @@ class CredentialsFetcherClient
         // Handle response
         if ( status.ok() )
         {
-            std::cout << "kerberos ticket renewal successful" <<
-                std::endl;
+            std::cout << "kerberos ticket renewal successful" << std::endl;
             for ( int i = 0; i < response.renewed_kerberos_file_paths_size(); i++ )
             {
                 std::string msg =
@@ -325,7 +323,6 @@ class CredentialsFetcherClient
         }
         return krb_ticket_paths;
     }
-
 
     /**
      * Test method to delete kerberos tickets
@@ -385,30 +382,30 @@ static void show_usage( std::string name )
               << "\t --create \t\tcreate krb tickets for service account\n"
               << "\t --delete \t\tdelete krb tickets for a given lease_id\tprovide lease_id to be "
                  "deleted\n"
-              << "\t --create_kerberos_tickets_non_domain_joined \t\t create tickets for non domain joined gMSA \tprovide"
+              << "\t --create_kerberos_tickets_non_domain_joined \t\t create tickets for non "
+                 "domain joined gMSA \tprovide"
                  " username, password, domain"
               << "\t --renew_kerberos_tickets_non_domain_joined \t\t create tickets for non domain "
                  "joined gMSA \tprovide"
                  "username, password, domain"
-            << "\t --create_kerberos_tickets_arn \t\t create tickets by getting credspecs from s3 gMSA \tprovide"
-               " credspecArn, accessId, secretkey, sessionToken, region"
-            << "\t --renew_kerberos_tickets_arn \t\t create tickets by getting credspecs from s3 "
-               " gMSA \tprovide"
-               "accessId, secretkey, sessionToken, region"
+              << "\t --create_kerberos_tickets_arn \t\t create tickets by getting credspecs from "
+                 "s3 gMSA \tprovide"
+                 " credspecArn, accessId, secretkey, sessionToken, region"
+              << "\t --renew_kerberos_tickets_arn \t\t create tickets by getting credspecs from s3 "
+                 " gMSA \tprovide"
+                 "accessId, secretkey, sessionToken, region"
               << "\t --invalidargs \t\ttest with invalid args, failure scenario\n"
               << "\t --run_stress_test \t\tstress test with multiple accounts and leases\n"
               << "\t --run_perf_test \t\tperf test with multiple accounts and leases\n"
-              << std::endl;;
+              << std::endl;
+    ;
 }
 
 // health check daemon
-std::string health_check(
-        CredentialsFetcherClient& client)
+std::string health_check( CredentialsFetcherClient& client )
 {
-    std::string health_check_response =
-            client.HealthCheckMethod("cfservice");
-    std::cout << "Client received output for health check: "
-              << health_check_response << std::endl;
+    std::string health_check_response = client.HealthCheckMethod( "cfservice" );
+    std::cout << "Client received output for health check: " << health_check_response << std::endl;
     return health_check_response;
 }
 
@@ -425,12 +422,12 @@ std::pair<std::string, std::list<std::string>> create_krb_ticket(
 
 // create kerberos tickets arns
 std::pair<std::string, std::list<std::string>> create_krb_ticket_arns(
-        CredentialsFetcherClient& client, std::list<std::string> credspec_contents,
-        std::string accessId, std::string secretKey, std::string sessionToken, std::string region )
+    CredentialsFetcherClient& client, std::list<std::string> credspec_contents,
+    std::string accessId, std::string secretKey, std::string sessionToken, std::string region )
 {
     std::pair<std::string, std::list<std::string>> kerberos_arn_lease_response =
-            client.CreateKerberosTicketsArn( credspec_contents, accessId, secretKey,
-                                             sessionToken, region );
+        client.CreateKerberosTicketsArn( credspec_contents, accessId, secretKey, sessionToken,
+                                         region );
     std::cout << "Client received output for add kerberos arn lease: "
               << kerberos_arn_lease_response.first << std::endl;
     return kerberos_arn_lease_response;
@@ -438,12 +435,12 @@ std::pair<std::string, std::list<std::string>> create_krb_ticket_arns(
 
 // renew kerberos tickets arns
 std::pair<std::string, std::string> renew_krb_ticket_arns(
-        CredentialsFetcherClient& client, std::list<std::string> credspec_contents,
-        std::string accessId, std::string secretKey, std::string sessionToken, std::string region )
+    CredentialsFetcherClient& client, std::list<std::string> credspec_contents,
+    std::string accessId, std::string secretKey, std::string sessionToken, std::string region )
 {
     std::pair<std::string, std::string> kerberos_arn_lease_response =
-            client.RenewKerberosTicketsArn( credspec_contents, accessId, secretKey,
-                                             sessionToken, region );
+        client.RenewKerberosTicketsArn( credspec_contents, accessId, secretKey, sessionToken,
+                                        region );
     std::cout << "Client received output for renew kerberos arn lease status: "
               << kerberos_arn_lease_response.second << std::endl;
     return kerberos_arn_lease_response;
@@ -463,9 +460,10 @@ std::pair<std::string, std::list<std::string>> create_krb_ticket_non_domain_join
 }
 
 // renew kerberos tickets non domain-joined
- std::list<std::string> renew_krb_ticket_non_domain_joined(
-    CredentialsFetcherClient& client, std::string username,
-    std::string password, std::string domain )
+std::list<std::string> renew_krb_ticket_non_domain_joined( CredentialsFetcherClient& client,
+                                                           std::string username,
+                                                           std::string password,
+                                                           std::string domain )
 {
     std::list<std::string> non_domain_joined_kerberos_lease_response =
         client.RenewNonDomainJoinedKerberosLeaseMethod( username, password, domain );
@@ -571,9 +569,8 @@ int run_stress_test( CredentialsFetcherClient& client, int num_of_leases,
     return 0;
 }
 
-
 int run_perf_test( CredentialsFetcherClient& client, int num_of_leases,
-                     int number_of_service_acounts )
+                   int number_of_service_acounts )
 {
     try
     {
@@ -620,51 +617,49 @@ int run_perf_test( CredentialsFetcherClient& client, int num_of_leases,
 }
 
 // unit tests
-bool parse_credspec_domainless_test(std::string credspec)
+bool parse_credspec_domainless_test( std::string credspec )
 {
-    krb_ticket_info_t* krb_ticket_info =
-                new krb_ticket_info_t;
-    krb_ticket_arn_mapping_t* krb_ticket_arn_mapping  =
-                new krb_ticket_arn_mapping_t;
-    int response = parse_cred_spec_domainless(credspec, krb_ticket_info, krb_ticket_arn_mapping );
+    krb_ticket_info_t* krb_ticket_info = new krb_ticket_info_t;
+    krb_ticket_arn_mapping_t* krb_ticket_arn_mapping = new krb_ticket_arn_mapping_t;
+    int response = parse_cred_spec_domainless( credspec, krb_ticket_info, krb_ticket_arn_mapping );
     std::cout << krb_ticket_arn_mapping->credential_spec_arn;
     std::cout << krb_ticket_arn_mapping->krb_file_path;
-    if(response == 0)
+    if ( response == 0 )
     {
-       return true;
+        return true;
     }
-    return  false;
+    return false;
 }
 
 int validate_domain()
 {
-    return (isValidDomain("a.com") && isValidDomain("ab.toto-abc.com") &&
-             !isValidDomain("p/") && isValidDomain("test4.gmsa-pentest.com") &&
-             !isValidDomain ("-testdomain.org") &&  isValidDomain("contoso.com") &&
-             !isValidDomain(".org"));
+    return ( isValidDomain( "a.com" ) && isValidDomain( "ab.toto-abc.com" ) &&
+             !isValidDomain( "p/" ) && isValidDomain( "test4.gmsa-pentest.com" ) &&
+             !isValidDomain( "-testdomain.org" ) && isValidDomain( "contoso.com" ) &&
+             !isValidDomain( ".org" ) );
 }
 
 #if AMAZON_LINUX_DISTRO
 int retrieve_credspec_from_s3_test()
 {
-    Aws::Auth::AWSCredentials creds = get_credentials("test", "test", "test");
+    Aws::Auth::AWSCredentials creds = get_credentials( "test", "test", "test" );
     std::string arn = "arn:aws:s3:::gmsacredspec/gmsa-cred-spec.json";
     std::string region = "us-west-2";
-    std::string response = retrieve_credspec_from_s3( arn, region, creds, true);
+    std::string response = retrieve_credspec_from_s3( arn, region, creds, true );
     std::cout << response;
-    parse_credspec_domainless_test(response);
+    parse_credspec_domainless_test( response );
     return 0;
 }
 
 int retrieve_credspec_from_secrets_manager_test()
 {
-    Aws::Auth::AWSCredentials creds = get_credentials("test", "test", "test");
+    Aws::Auth::AWSCredentials creds = get_credentials( "test", "test", "test" );
     std::string arn = "arn:aws:secretsmanager:us-west-2:618112483929:secret:gMSAUserSecret-PwmPaO";
     std::string region = "us-west-2";
-    auto response = retrieve_credspec_from_secrets_manager( arn, region, creds);
-    std::cout << std::get<0>(response);  // username
-    std::cout << std::get<1>(response);  // password
-    std::cout << std::get<4>(response);  // secret_version_id
+    auto response = retrieve_credspec_from_secrets_manager( arn, region, creds );
+    std::cout << std::get<0>( response ); // username
+    std::cout << std::get<1>( response ); // password
+    std::cout << std::get<4>( response ); // secret_version_id
     return 0;
 }
 #endif
@@ -714,13 +709,20 @@ int main( int argc, char** argv )
         "\"DnsTreeName\":\"contoso.com\",\"NetBiosName\":\"contoso\"}," };
 
     std::string credspec_contents_domainless_str =
-            "{\"CmsPlugins\":[\"ActiveDirectory\"],\"DomainJoinConfig\":{\"Sid\":\"S-1-5-21-4066351383-705263209-1606769140\",\"MachineAccountName\":\"webapp01\",\"Guid\":\"ac822f13-583e-49f7-aa7b-284f9a8c97b6\",\"DnsTreeName\":\"contoso.com\",\"DnsName\":\"contoso.com\",\"NetBiosName\":\"contoso\"},\"ActiveDirectoryConfig\":{\"GroupManagedServiceAccounts\":[{\"Name\":\"webapp01\",\"Scope\":\"contoso.com\"},{\"Name\":\"webapp01\",\"Scope\":\"contoso\"}],\"HostAccountConfig\":{\"PortableCcgVersion\":\"1\",\"PluginGUID\":\"{859E1386-BDB4-49E8-85C7-3070B13920E1}\",\"PluginInput\":{\"CredentialArn\":\"arn:aws:secretsmanager:us-west-2:123456789:secret:gMSAUserSecret-PwmPaO\"}}}}";
+        "{\"CmsPlugins\":[\"ActiveDirectory\"],\"DomainJoinConfig\":{\"Sid\":\"S-1-5-21-4066351383-"
+        "705263209-1606769140\",\"MachineAccountName\":\"webapp01\",\"Guid\":\"ac822f13-583e-49f7-"
+        "aa7b-284f9a8c97b6\",\"DnsTreeName\":\"contoso.com\",\"DnsName\":\"contoso.com\","
+        "\"NetBiosName\":\"contoso\"},\"ActiveDirectoryConfig\":{\"GroupManagedServiceAccounts\":[{"
+        "\"Name\":\"webapp01\",\"Scope\":\"contoso.com\"},{\"Name\":\"webapp01\",\"Scope\":"
+        "\"contoso\"}],\"HostAccountConfig\":{\"PortableCcgVersion\":\"1\",\"PluginGUID\":\"{"
+        "859E1386-BDB4-49E8-85C7-3070B13920E1}\",\"PluginInput\":{\"CredentialArn\":\"arn:aws:"
+        "secretsmanager:us-west-2:123456789:secret:gMSAUserSecret-PwmPaO\"}}}}";
 
+    std::list<std::string> credspec_contents_arns_domainless = {
+        "arn:aws:s3:::gmsacredspec/gmsa-cred-spec.json" };
 
-    std::list<std::string>  credspec_contents_arns_domainless = {"arn:aws:s3:::gmsacredspec/gmsa-cred-spec.json"};
-
-   // create and delete krb tickets
-   if ( argc == 1 )
+    // create and delete krb tickets
+    if ( argc == 1 )
     {
         std::pair<std::string, std::list<std::string>> add_kerberos_lease_response =
             create_krb_ticket( client, credspec_contents );
@@ -735,27 +737,31 @@ int main( int argc, char** argv )
             show_usage( argv[0] );
             return 0;
         }
-        else if (arg == "--unit_test")
+        else if ( arg == "--unit_test" )
         {
 
-            bool testStatus = (parse_credspec_domainless_test(credspec_contents_domainless_str) && validate_domain());
-            if(!testStatus){
+            bool testStatus =
+                ( parse_credspec_domainless_test( credspec_contents_domainless_str ) &&
+                  validate_domain() );
+            if ( !testStatus )
+            {
                 std::cout << "client tests failed" << std::endl;
-                return  EXIT_FAILURE;
+                return EXIT_FAILURE;
             }
-            else{
+            else
+            {
                 std::cout << "client tests successful" << std::endl;
-                return  EXIT_SUCCESS;
+                return EXIT_SUCCESS;
             }
-            //These methods are added only to test a specific flow, not unit testable
-            #if AMAZON_LINUX_DISTRO
+// These methods are added only to test a specific flow, not unit testable
+#if AMAZON_LINUX_DISTRO
             retrieve_credspec_from_s3_test();
             retrieve_credspec_from_secrets_manager_test();
-            #endif
+#endif
         }
         else if ( arg == "--check" )
         {
-            health_check(client);
+            health_check( client );
             return 0;
         }
         else if ( arg == "--delete" )
@@ -773,10 +779,11 @@ int main( int argc, char** argv )
             delete_krb_ticket( client, lease_id );
             i++;
         }
-        else if(arg == "--create_kerberos_tickets_arn"){
+        else if ( arg == "--create_kerberos_tickets_arn" )
+        {
             if ( i + 4 < argc )
             {
-                credspecArn = argv[ i + 1];
+                credspecArn = argv[i + 1];
                 accessId = argv[i + 2];
                 secretkey = argv[i + 3];
                 sessionToken = argv[i + 4];
@@ -786,18 +793,19 @@ int main( int argc, char** argv )
             {
                 std::cout << "--create_kerberos_tickets_arn option requires credspecArn, accessId, "
                              "secretkey, sessionToken region"
-                             "argument." << std::endl;
+                             "argument."
+                          << std::endl;
                 return 0;
             }
 
             std::cout << "krb tickets will get created" << std::endl;
-            std::list<std::string>  domainless_arn_array = {credspecArn};
-            create_krb_ticket_arns( client, domainless_arn_array, accessId, secretkey,
-                                    sessionToken, region );
+            std::list<std::string> domainless_arn_array = { credspecArn };
+            create_krb_ticket_arns( client, domainless_arn_array, accessId, secretkey, sessionToken,
+                                    region );
             i++;
-
         }
-        else if(arg == "--renew_kerberos_tickets_arn"){
+        else if ( arg == "--renew_kerberos_tickets_arn" )
+        {
             if ( i + 3 < argc )
             {
                 accessId = argv[i + 1];
@@ -809,17 +817,18 @@ int main( int argc, char** argv )
             {
                 std::cout << "--renew_kerberos_tickets_arn option requires accessId, "
                              "secretkey, sessionToken region"
-                             "argument." << std::endl;
+                             "argument."
+                          << std::endl;
                 return 0;
             }
             std::cout << "krb tickets will get created" << std::endl;
-            std::list<std::string>  domainless_arn_array = {};
+            std::list<std::string> domainless_arn_array = {};
             renew_krb_ticket_arns( client, credspec_contents_arns_domainless, accessId, secretkey,
-                                    sessionToken, region );
+                                   sessionToken, region );
             i++;
-
         }
-        else if(arg == "--create_kerberos_tickets_non_domain_joined" ){
+        else if ( arg == "--create_kerberos_tickets_non_domain_joined" )
+        {
             if ( i + 2 < argc )
             {
                 username = argv[i + 1];
@@ -828,9 +837,11 @@ int main( int argc, char** argv )
             }
             else
             {
-                std::cout << "--create_kerberos_tickets_non_domain_joined option requires username, "
-                             "password, domain"
-                             "argument." << std::endl;
+                std::cout
+                    << "--create_kerberos_tickets_non_domain_joined option requires username, "
+                       "password, domain"
+                       "argument."
+                    << std::endl;
                 return 0;
             }
             std::cout << "krb tickets will get created" << std::endl;
@@ -838,7 +849,8 @@ int main( int argc, char** argv )
                                                  domain );
             return 0;
         }
-        else if(arg == "--renew_kerberos_tickets_non_domain_joined" ){
+        else if ( arg == "--renew_kerberos_tickets_non_domain_joined" )
+        {
             if ( i + 2 < argc )
             {
                 username = argv[i + 1];
@@ -850,19 +862,19 @@ int main( int argc, char** argv )
                 std::cout << "--renew_kerberos_tickets_non_domain_joined option requires "
                              "username, "
                              "password, domain"
-                             "argument." << std::endl;
+                             "argument."
+                          << std::endl;
                 return 0;
             }
             std::cout << "krb tickets will get renewed" << std::endl;
-            renew_krb_ticket_non_domain_joined( client, username, password,
-                                                 domain );
+            renew_krb_ticket_non_domain_joined( client, username, password, domain );
             i++;
         }
         else if ( arg == "--create" )
         {
             if ( i + 1 < argc )
             {
-                std::list<std::string> credspecs = {argv[i + 1]};
+                std::list<std::string> credspecs = { argv[i + 1] };
                 create_krb_ticket( client, credspecs );
                 i++;
             }

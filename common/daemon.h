@@ -269,8 +269,6 @@ std::tuple<std::string, std::string, std::string, std::string, std::string>
 retrieve_credspec_from_secrets_manager( std::string sm_arn, std::string region,
                                         Aws::Auth::AWSCredentials credentials );
 
-bool has_secret_version_changed(const std::string& stored_version_id, const std::string& current_version_id);
-
 Aws::Auth::AWSCredentials get_credentials( std::string accessKeyId, std::string secretKey,
                                            std::string sessionToken );
 #endif
