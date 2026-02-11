@@ -20,6 +20,7 @@
 #include <aws/s3/model/GetObjectRequest.h>
 #include <aws/s3/model/HeadObjectRequest.h>
 #include <aws/secretsmanager/SecretsManagerClient.h>
+#include <aws/secretsmanager/model/DescribeSecretRequest.h>
 #include <aws/secretsmanager/model/GetSecretValueRequest.h>
 #include <aws/sts/STSClient.h>
 #include <aws/sts/model/GetAccessKeyInfoRequest.h>
@@ -2816,5 +2817,74 @@ retrieve_credspec_from_secrets_manager( std::string sm_arn, std::string region,
         return { "", "", "", "", "" };
     }
     return { "", "", "", "", "" };
+}
+
+/**
+ * Retrieve staging labels for a specified version ID from AWS Secrets Manager
+ * @param secret_arn - ARN of the secret in Secrets Manager
+ * @param version_id - Version ID to get staging labels for
+ * @param region - AWS region where the secret is located
+ * @param cf_logger - credentials fetcher logger
+ * @return - vector of staging labels, empty if failed
+ */
+std::vector<std::string> get_secret_staging_labels( const std::string& secret_arn,
+                                                    const std::string& version_id,
+                                                    const std::string& region,
+                                                    CF_logger& cf_logger )
+{
+    std::vector<std::string> staging_labels;
+
+    if ( secret_arn.empty() || version_id.empty() || region.empty() )
+    {
+        std::string log_msg = "ERROR: get_secret_staging_labels - missing required parameters";
+        cf_logger.logger( LOG_ERR, log_msg.c_str() );
+        std::cerr << Util::getCurrentTime() << '\t' << log_msg << std::endl;
+        return staging_labels;
+    }
+
+    std::cerr << Util::getCurrentTime() << '\t'
+              << "DEBUG: Getting staging labels for secret ARN=" << secret_arn
+              << " version_id=" << version_id << " region=" << region << std::endl;
+
+    Aws::Client::ClientConfiguration clientConfig;
+    clientConfig.region = region;
+
+    Aws::SecretsManager::SecretsManagerClient sm_client( clientConfig );
+
+    Aws::SecretsManager::Model::DescribeSecretRequest describe_request;
+    describe_request.SetSecretId( secret_arn );
+
+    auto describe_outcome = sm_client.DescribeSecret( describe_request );
+    if ( !describe_outcome.IsSuccess() )
+    {
+        std::string log_msg =
+            "ERROR: DescribeSecret failed: " + describe_outcome.GetError().GetMessage();
+        cf_logger.logger( LOG_ERR, log_msg.c_str() );
+        std::cerr << Util::getCurrentTime() << '\t' << log_msg << std::endl;
+        return staging_labels;
+    }
+
+    const auto& version_stages_map = describe_outcome.GetResult().GetVersionIdsToStages();
+    auto version_it = version_stages_map.find( version_id );
+    if ( version_it == version_stages_map.end() )
+    {
+        std::string log_msg = "WARNING: version ID " + version_id + " not found in secret";
+        cf_logger.logger( LOG_WARNING, log_msg.c_str() );
+        std::cerr << Util::getCurrentTime() << '\t' << log_msg << std::endl;
+        return staging_labels;
+    }
+
+    for ( const auto& stage : version_it->second )
+    {
+        staging_labels.push_back( stage );
+        std::cerr << Util::getCurrentTime() << '\t' << "DEBUG: Staging label: " << stage
+                  << std::endl;
+    }
+
+    std::string log_msg = "INFO: Found " + std::to_string( staging_labels.size() ) +
+                          " staging labels for version " + version_id;
+    cf_logger.logger( LOG_INFO, log_msg.c_str() );
+
+    return staging_labels;
 }
 #endif

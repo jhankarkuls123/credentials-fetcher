@@ -208,6 +208,13 @@ void krb_ticket_creation( const char* ldap_uri_arg, const char* gmsa_account_nam
 
 bool is_ticket_ready_for_renewal( krb_ticket_info_t* krb_ticket_info, CF_logger& cf_logger );
 
+#if AMAZON_LINUX_DISTRO
+std::vector<std::string> get_secret_staging_labels( const std::string& secret_arn,
+                                                    const std::string& version_id,
+                                                    const std::string& region,
+                                                    CF_logger& cf_logger );
+#endif
+
 std::string get_ticket_expiration( std::string klist_ticket_info );
 
 std::vector<std::string> delete_krb_tickets( std::string krb_files_dir, std::string lease_id );

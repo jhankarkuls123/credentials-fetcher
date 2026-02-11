@@ -136,6 +136,56 @@ TEST_F( GmsaIntegrationTest, B_RenewNonDomainJoinedKerberosLeaseMethod_Test )
     ASSERT_TRUE( status.ok() ) << status.error_message();
 }
 
+// Test for secret rotation scenario - renew with different credentials after rotation
+// This test requires CF_TEST_ROTATED_USERNAME and CF_TEST_ROTATED_PASSWORD environment variables
+// to be set with the new credentials after a secret rotation has occurred
+TEST_F( GmsaIntegrationTest, B2_RenewNonDomainJoinedKerberosLeaseAfterRotation_Test )
+{
+    if ( non_domain_joined_lease_id_.empty() )
+    {
+        GTEST_SKIP() << "Skipping test because AddNonDomainJoinedKerberosLease_Test failed";
+    }
+
+    // Check if rotated credentials are provided
+    const char* rotated_username = std::getenv( "CF_TEST_ROTATED_USERNAME" );
+    const char* rotated_password = std::getenv( "CF_TEST_ROTATED_PASSWORD" );
+
+    if ( !rotated_username || !rotated_password )
+    {
+        GTEST_SKIP() << "Skipping rotation test - CF_TEST_ROTATED_USERNAME and "
+                        "CF_TEST_ROTATED_PASSWORD not set";
+    }
+
+    // Prepare request with new (rotated) credentials
+    credentialsfetcher::RenewNonDomainJoinedKerberosLeaseRequest request;
+
+    // Set rotated credentials (different from original)
+    request.set_username( rotated_username );
+    request.set_password( rotated_password );
+    request.set_domain( get_environment_var( CF_TEST_DOMAIN ) );
+
+    credentialsfetcher::RenewNonDomainJoinedKerberosLeaseResponse response;
+    grpc::ClientContext context;
+
+    // Call the API - this should trigger rotation detection and ticket recreation
+    grpc::Status status = _stub->RenewNonDomainJoinedKerberosLease( &context, request, &response );
+
+    // Verify response - should succeed if rotation handling works correctly
+    ASSERT_TRUE( status.ok() ) << status.error_message();
+
+    // Verify renewed ticket paths are returned
+    ASSERT_GT( response.renewed_kerberos_file_paths_size(), 0 )
+        << "Should have renewed at least one kerberos ticket after rotation";
+
+    // Verify renewed file paths exist
+    for ( int i = 0; i < response.renewed_kerberos_file_paths_size(); i++ )
+    {
+        const std::string& file_path = response.renewed_kerberos_file_paths( i );
+        ASSERT_TRUE( std::filesystem::exists( file_path ) )
+            << "Renewed Kerberos file " << file_path << " should exist";
+    }
+}
+
 TEST_F( GmsaIntegrationTest, C_DeleteKerberosLeaseMethod_Test )
 {
     if ( non_domain_joined_lease_id_.empty() )

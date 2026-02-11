@@ -512,6 +512,95 @@ std::list<std::string> renew_kerberos_tickets_domainless( std::string krb_files_
                     renewed_krb_ticket_paths.push_back( renewed_ticket_path );
                 }
             }
+#if AMAZON_LINUX_DISTRO
+            else if ( !username.empty() && username != domainlessuser )
+            {
+                // extract region from credential ARN
+                // ARN format: arn:aws:secretsmanager:<region>:<account>:secret:<name>
+                std::string credential_arn = krb_ticket->credential_arn;
+                std::string region;
+                std::string version_id = krb_ticket->secret_version_id;
+
+                // parse region from ARN
+                // ARN format: arn:<partition>:secretsmanager:<region>:<account>:secret:<name>
+                std::smatch arn_match;
+                std::regex arn_pattern( "arn:[^:]+:[^:]+:([^:]+):" );
+                if ( std::regex_search( credential_arn, arn_match, arn_pattern ) )
+                {
+                    region = arn_match[1];
+                }
+
+                if ( !version_id.empty() && !credential_arn.empty() && !region.empty() )
+                {
+                    std::vector<std::string> staging_labels =
+                        get_secret_staging_labels( credential_arn, version_id, region, cf_logger );
+
+                    if ( std::find( staging_labels.begin(), staging_labels.end(), "AWSCURRENT" ) ==
+                         staging_labels.end() )
+                    {
+                        std::string log_msg =
+                            "Version ID " + version_id +
+                            " is not active secret version anymore. A rotation for secret " +
+                            credential_arn + " has occurred";
+                        cf_logger.logger( LOG_WARNING, log_msg.c_str() );
+                        std::cerr << Util::getCurrentTime() << '\t' << log_msg << std::endl;
+
+                        // Generate user ticket with new credentials
+                        std::pair<int, std::string> user_ticket_result =
+                            Util::generate_krb_ticket_using_username_and_password(
+                                domain_name, username, password, cf_logger );
+
+                        if ( user_ticket_result.first == 0 )
+                        {
+                            // Recreate gMSA ticket using the new user ticket
+                            std::string krb_cc_name = krb_ticket->krb_file_path;
+                            std::pair<int, std::string> gmsa_ticket_result =
+                                fetch_gmsa_password_and_create_krb_ticket(
+                                    krb_ticket->domain_name, krb_ticket, krb_cc_name, cf_logger );
+
+                            if ( gmsa_ticket_result.first == 0 )
+                            {
+                                // Update krb_ticket with new domainless user
+                                krb_ticket->domainless_user = username;
+
+                                // Extract lease_id from file_path to update metadata
+                                // file_path format: krb_files_dir/lease_id/lease_id_metadata.json
+                                std::filesystem::path meta_path( file_path );
+                                std::string lease_id = meta_path.parent_path().filename().string();
+
+                                // Update metadata file with new domainless_user
+                                write_meta_data_json( krb_ticket_info_list, lease_id,
+                                                      krb_files_dir );
+
+                                renewed_krb_ticket_paths.push_back( krb_cc_name );
+
+                                std::string success_msg =
+                                    "INFO: Successfully recreated gMSA ticket after secret "
+                                    "rotation for " +
+                                    krb_ticket->service_account_name;
+                                cf_logger.logger( LOG_INFO, success_msg.c_str() );
+                                std::cerr << Util::getCurrentTime() << '\t' << success_msg
+                                          << std::endl;
+                            }
+                            else
+                            {
+                                std::string err_msg =
+                                    "ERROR: Failed to recreate gMSA ticket after secret rotation";
+                                cf_logger.logger( LOG_ERR, err_msg.c_str() );
+                                std::cerr << Util::getCurrentTime() << '\t' << err_msg << std::endl;
+                            }
+                        }
+                        else
+                        {
+                            std::string err_msg =
+                                "ERROR: Failed to generate user ticket with new credentials";
+                            cf_logger.logger( LOG_ERR, err_msg.c_str() );
+                            std::cerr << Util::getCurrentTime() << '\t' << err_msg << std::endl;
+                        }
+                    }
+                }
+            }
+#endif
         }
     }
 
