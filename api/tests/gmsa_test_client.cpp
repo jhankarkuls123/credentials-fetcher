@@ -662,8 +662,9 @@ int retrieve_credspec_from_secrets_manager_test()
     std::string arn = "arn:aws:secretsmanager:us-west-2:618112483929:secret:gMSAUserSecret-PwmPaO";
     std::string region = "us-west-2";
     auto response = retrieve_credspec_from_secrets_manager( arn, region, creds);
-    std::cout << std::get<0>(response);
-    std::cout << std::get<1>(response);
+    std::cout << std::get<0>(response);  // username
+    std::cout << std::get<1>(response);  // password
+    std::cout << std::get<4>(response);  // secret_version_id
     return 0;
 }
 #endif

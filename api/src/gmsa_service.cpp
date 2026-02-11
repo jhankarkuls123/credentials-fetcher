@@ -479,7 +479,7 @@ class CredentialsFetcherImpl final
                                     break;
                                 }
                                 // retrieve domainless user credentials
-                                std::tuple<std::string, std::string, std::string, std::string>
+                                std::tuple<std::string, std::string, std::string, std::string, std::string>
                                     userCreds = retrieve_credspec_from_secrets_manager(
                                         krb_ticket_arns->credential_domainless_user_arn, region,
                                         creds );
@@ -488,6 +488,7 @@ class CredentialsFetcherImpl final
                                 password = std::get<1>( userCreds );
                                 domain = std::get<2>( userCreds );
                                 distinguished_name = std::get<3>( userCreds );
+                                std::string secret_version_id = std::get<4>( userCreds );
 
                                 if ( isValidDomain( domain ) &&
                                      !Util::contains_invalid_characters_in_ad_account_name( username ) )
@@ -511,6 +512,12 @@ class CredentialsFetcherImpl final
                                         krb_ticket_info->domainless_user = username;
                                         krb_ticket_arns->krb_file_path = krb_files_path;
                                         krb_ticket_info->distinguished_name = distinguished_name;
+                                        krb_ticket_info->secret_version_id = secret_version_id;
+                                        
+                                        std::cerr << Util::getCurrentTime() << '\t'
+                                                  << "INFO: Stored secret version ID: " 
+                                                  << secret_version_id << " for service account: "
+                                                  << krb_ticket_info->service_account_name << std::endl;
 
                                         // handle duplicate service accounts
                                         if ( !krb_ticket_dirs.count( krb_files_path ) )
@@ -893,7 +900,7 @@ class CredentialsFetcherImpl final
                                     }
 
                                     // retrieve domainless user credentials
-                                    std::tuple<std::string, std::string, std::string, std::string>
+                                    std::tuple<std::string, std::string, std::string, std::string, std::string>
                                         userCreds = retrieve_credspec_from_secrets_manager(
                                             krb_ticket_arns->credential_domainless_user_arn, region,
                                             creds );
@@ -902,6 +909,7 @@ class CredentialsFetcherImpl final
                                     password = std::get<1>( userCreds );
                                     std::string domain = std::get<2>( userCreds );
                                     // std::string distinguished_name = std::get<3>( userCreds );
+                                    std::string secret_version_id = std::get<4>( userCreds );
 
                                     if ( isValidDomain( domain ) &&
                                          !Util::contains_invalid_characters_in_ad_account_name(
@@ -915,6 +923,11 @@ class CredentialsFetcherImpl final
                                         {
                                             std::string renewal_path = renew_gmsa_ticket(
                                                 krb_ticket, domain, username, password, cf_logger );
+                                            // Update the secret version ID for tracking
+                                            krb_ticket->secret_version_id = secret_version_id;
+                                            std::cerr << Util::getCurrentTime() << '\t'
+                                                      << "INFO: Updated secret version ID to: " 
+                                                      << secret_version_id << std::endl;
                                         }
                                         else
                                         {
@@ -2710,9 +2723,23 @@ std::string retrieve_credspec_from_s3( std::string s3_arn, std::string region,
     return response;
 }
 
+/**
+ * Check if the secret version has changed by comparing stored version ID with current version
+ * @param stored_version_id - version ID stored in metadata
+ * @param current_version_id - current version ID from secrets manager
+ * @return true if versions differ, false if same
+ */
+bool has_secret_version_changed(const std::string& stored_version_id, const std::string& current_version_id)
+{
+    if (stored_version_id.empty() || current_version_id.empty()) {
+        return true; // Consider it changed if either version is missing
+    }
+    return stored_version_id != current_version_id;
+}
+
 // retrieve secrets from secrets manager
 // example : arn:aws:secretsmanager:us-west-2:618112483929:secret:gMSAUserSecret-PwmPaO
-std::tuple<std::string, std::string, std::string, std::string>
+std::tuple<std::string, std::string, std::string, std::string, std::string>
 retrieve_credspec_from_secrets_manager( std::string sm_arn, std::string region,
                                         Aws::Auth::AWSCredentials credentials )
 {
@@ -2744,15 +2771,19 @@ retrieve_credspec_from_secrets_manager( std::string sm_arn, std::string region,
             requestsec.SetSecretId( sm_arn );
 
             auto getSecretValueOutcome = sm_client.GetSecretValue( requestsec );
+            std::string versionId = "";
             if ( getSecretValueOutcome.IsSuccess() )
             {
                 response = getSecretValueOutcome.GetResult().GetSecretString();
+                versionId = getSecretValueOutcome.GetResult().GetVersionId();
+                std::cerr << Util::getCurrentTime() << '\t'
+                          << "INFO: Retrieved secret version ID: " << versionId << std::endl;
             }
             else
             {
                 std::cerr << Util::getCurrentTime() << '\t'
                           << "ERROR: " << getSecretValueOutcome.GetError() << std::endl;
-                return { "", "", "", "" };
+                return { "", "", "", "", "" };
             }
         }
 
@@ -2780,7 +2811,7 @@ retrieve_credspec_from_secrets_manager( std::string sm_arn, std::string region,
         {
             distinguished_name = root["distinguishedNameOfgMSA"].asString();
         }
-        return { username, password, root["domainName"].asString(), distinguished_name };
+        return { username, password, root["domainName"].asString(), distinguished_name, versionId };
     }
     catch ( ... )
     {
@@ -2788,8 +2819,8 @@ retrieve_credspec_from_secrets_manager( std::string sm_arn, std::string region,
                   << "ERROR: retrieving user info from secrets manager "
                      "failed"
                   << std::endl;
-        return { "", "", "", "" };
+        return { "", "", "", "", "" };
     }
-    return { "", "", "", "" };
+    return { "", "", "", "", "" };
 }
 #endif

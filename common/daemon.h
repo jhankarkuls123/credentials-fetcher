@@ -64,6 +64,7 @@ class krb_ticket_info_t
     std::string credspec_info;
     std::string distinguished_name;
     std::string credential_arn;
+    std::string secret_version_id;
 };
 
 /*
@@ -264,9 +265,11 @@ std::string retrieve_credspec_from_s3( std::string s3_arn, std::string region,
 bool check_file_size_s3( std::string s3_arn, std::string region,
                          Aws::Auth::AWSCredentials credentials, bool test );
 std::string get_caller_id( std::string region, Aws::Auth::AWSCredentials credentials );
-std::tuple<std::string, std::string, std::string, std::string>
+std::tuple<std::string, std::string, std::string, std::string, std::string>
 retrieve_credspec_from_secrets_manager( std::string sm_arn, std::string region,
                                         Aws::Auth::AWSCredentials credentials );
+
+bool has_secret_version_changed(const std::string& stored_version_id, const std::string& current_version_id);
 
 Aws::Auth::AWSCredentials get_credentials( std::string accessKeyId, std::string secretKey,
                                            std::string sessionToken );

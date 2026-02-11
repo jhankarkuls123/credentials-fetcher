@@ -94,6 +94,11 @@ std::list<krb_ticket_info_t *> read_meta_data_json( std::string file_path )
                         krb_ticket_info->credspec_info = krb_info["credspec_info"].asString();
                     }
 
+                    if(krb_info.isMember("secret_version_id"))
+                    {
+                        krb_ticket_info->secret_version_id = krb_info["secret_version_id"].asString();
+                    }
+
                     krb_ticket_info_list.push_back( krb_ticket_info );
                 }
             }
@@ -172,6 +177,7 @@ int write_meta_data_json( std::list<krb_ticket_info_t*> krb_ticket_info_list,
             ticket_info["domainless_user"] = krb_ticket_info->domainless_user;
             ticket_info["credspec_info"] = krb_ticket_info->credspec_info;
             ticket_info["distinguished_name"] = krb_ticket_info->distinguished_name;
+            ticket_info["secret_version_id"] = krb_ticket_info->secret_version_id;
 
             krb_ticket_info_parent.append( ticket_info );
         }
