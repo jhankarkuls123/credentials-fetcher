@@ -2723,20 +2723,6 @@ std::string retrieve_credspec_from_s3( std::string s3_arn, std::string region,
     return response;
 }
 
-/**
- * Check if the secret version has changed by comparing stored version ID with current version
- * @param stored_version_id - version ID stored in metadata
- * @param current_version_id - current version ID from secrets manager
- * @return true if versions differ, false if same
- */
-bool has_secret_version_changed(const std::string& stored_version_id, const std::string& current_version_id)
-{
-    if (stored_version_id.empty() || current_version_id.empty()) {
-        return true; // Consider it changed if either version is missing
-    }
-    return stored_version_id != current_version_id;
-}
-
 // retrieve secrets from secrets manager
 // example : arn:aws:secretsmanager:us-west-2:618112483929:secret:gMSAUserSecret-PwmPaO
 std::tuple<std::string, std::string, std::string, std::string, std::string>
